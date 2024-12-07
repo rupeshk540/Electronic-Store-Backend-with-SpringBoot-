@@ -1,1 +1,1 @@
-Electroni Store - Using SpringBoot(Bakend)
+Electronic Store - Using SpringBoot(Backend)
