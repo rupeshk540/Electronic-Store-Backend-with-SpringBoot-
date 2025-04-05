@@ -16,7 +16,7 @@ public class ImageNameValidator implements ConstraintValidator<ImageNameValid,St
         logger.info("Message from isValid :{}",value);
 
         //logic
-        if(value.isBlank()){
+        if(value==null || value.isBlank()){
             return false;
         }else {
             return true;

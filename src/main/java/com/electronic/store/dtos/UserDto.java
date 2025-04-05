@@ -1,11 +1,15 @@
 package com.electronic.store.dtos;
 
+import com.electronic.store.entities.Providers;
+import com.electronic.store.entities.Role;
 import com.electronic.store.validate.ImageNameValid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -33,7 +37,12 @@ public class UserDto {
     @NotBlank(message = "Write something about yourself !!")
     private String about;
 
+    private List<RoleDto> roles;
+
     //custom validator
-    @ImageNameValid
+   // @ImageNameValid
     private String imageName;
+
+    private Providers provider;
+
 }

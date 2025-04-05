@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public class OrderController {
     private OrderService orderService;
 
     //create
+    @PreAuthorize("hasAnyRole('NORMAL','ADMIN')")
     @PostMapping
     public ResponseEntity<OrderDto> createOrder(@Valid @RequestBody CreateOrderRequest request){
         OrderDto order = orderService.createOrder(request);
@@ -31,6 +33,7 @@ public class OrderController {
     }
 
     //remove order
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{orderId}")
     public ResponseEntity<ApiResponseMessage> removeOrder(@PathVariable String orderId){
         orderService.removeOrder(orderId);
@@ -43,6 +46,7 @@ public class OrderController {
     }
 
     //get orders of the User
+    @PreAuthorize("hasAnyRole('NORMAL','ADMIN')")
     @GetMapping("/users/{userId}")
     public ResponseEntity<List<OrderDto>> getOrderOfUser(@PathVariable String userId){
         List<OrderDto> orderOfUser = orderService.getOrderOfUser(userId);
@@ -50,6 +54,7 @@ public class OrderController {
     }
 
     //get all orders
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<PageableResponse<OrderDto>> getOrders(
         @RequestParam(value = "pageNumber",defaultValue = "0",required = false) int pageNumber,

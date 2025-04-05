@@ -2,9 +2,11 @@ package com.electronic.store.services.impl;
 
 import com.electronic.store.dtos.PageableResponse;
 import com.electronic.store.dtos.UserDto;
+import com.electronic.store.entities.Role;
 import com.electronic.store.entities.User;
 import com.electronic.store.exceptions.ResourceNotFoundException;
 import com.electronic.store.helper.Helper;
+import com.electronic.store.repositories.RoleRepository;
 import com.electronic.store.repositories.UserRepository;
 import com.electronic.store.services.UserService;
 import org.hibernate.bytecode.internal.bytebuddy.PassThroughInterceptor;
@@ -17,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -33,9 +36,12 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private UserRepository userRepository;
-
     @Autowired
     private ModelMapper mapper;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private RoleRepository roleRepository;
 
     @Value("${user.profile.image.path}")
     private String imagePath;
@@ -51,6 +57,16 @@ public class UserServiceImpl implements UserService {
 
         //convert dto->entity
         User user = dtoToEntity(userDto);
+        //password encode
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        //assign normal role by default
+        Role role = new Role();
+        role.setRoleId(UUID.randomUUID().toString());
+        role.setName("ROLE_NORMAL");
+
+        Role roleNormal = roleRepository.findByName("ROLE_NORMAL").orElse(role);
+        user.setRoles(List.of(roleNormal));
         User savedUser = userRepository.save(user);
         //entity -> dto
         UserDto newDto = entityToDto(savedUser);
@@ -64,7 +80,7 @@ public class UserServiceImpl implements UserService {
         user.setName(userDto.getName());
         user.setAbout(userDto.getAbout());
         user.setGender(userDto.getGender());
-        user.setPassword(userDto.getPassword());
+        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
         user.setImageName(userDto.getImageName());
 
         //save data

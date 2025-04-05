@@ -4,6 +4,7 @@ import com.electronic.store.dtos.ApiResponseMessage;
 import com.electronic.store.dtos.ImageResponse;
 import com.electronic.store.dtos.PageableResponse;
 import com.electronic.store.dtos.UserDto;
+import com.electronic.store.entities.Providers;
 import com.electronic.store.services.FileService;
 import com.electronic.store.services.UserService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -42,6 +43,7 @@ public class UserController {
     //create
     @PostMapping
     public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserDto userDto){
+       userDto.setProvider(Providers.SELF);
         UserDto userDto1 = userService.createUser(userDto);
         return new ResponseEntity<>(userDto1, HttpStatus.CREATED);
     }
