@@ -33,6 +33,15 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationEntryPoint entryPoint;
 
+    private final String[] PUBLIC_URLS = {
+            "/swagger-ui/**",
+            "/webjars/**",
+            "/swagger-resources/**",
+            "/v3/api-docs",
+            "/v2/api-docs",
+            "/test"
+    };
+
     //securityFilterChain bean
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity security) throws Exception {
@@ -48,8 +57,8 @@ public class SecurityConfig {
                     public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
                         CorsConfiguration corsConfiguration = new CorsConfiguration();
                         //origins , methods
-                        //corsConfiguration.addAllowedOrigin("http://localhost:4200");
-                       // corsConfiguration.setAllowedOrigins(List.of("http://localhost:4200","http://localhost:4300"));
+                        corsConfiguration.addAllowedOrigin("http://localhost:3000");
+                        corsConfiguration.setAllowedOrigins(List.of("http://localhost:3000","http://localhost:3000"));
                         corsConfiguration.setAllowedOriginPatterns(List.of("*"));
                         corsConfiguration.setAllowedMethods(List.of("*"));
                         corsConfiguration.setAllowCredentials(true);
@@ -71,6 +80,7 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET,"/categories/**").permitAll()
                     .requestMatchers("/categories/**").hasRole("ADMIN")
                     .requestMatchers(HttpMethod.POST,"/auth/generate-token","/auth/login-with-google","/auth/regenerate-token").permitAll()
+                    .requestMatchers(PUBLIC_URLS).permitAll()
                    // .requestMatchers("/auth/**").authenticated()
                     .anyRequest().permitAll()
         );

@@ -3,6 +3,7 @@ package com.electronic.store.dtos;
 import com.electronic.store.entities.Providers;
 import com.electronic.store.entities.Role;
 import com.electronic.store.validate.ImageNameValid;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -21,6 +22,7 @@ public class UserDto {
     private String userId;
 
     @Size(min = 3,max = 20, message = "Invalid Name !!")
+    @Schema(name = "username", accessMode = Schema.AccessMode.READ_ONLY,description = "user name of new user !!")
     private String name;
 
     // @Email(message = "Invalid User Email !!")
@@ -31,11 +33,11 @@ public class UserDto {
     @NotBlank(message = "Password is required !!")
     private String password;
 
-    @Size(min = 4,max = 7,message = "Invalid gender !!")
-    private String gender;
+//    @Size(min = 4,max = 7,message = "Invalid gender !!")
+//    private String gender;
 
-    @NotBlank(message = "Write something about yourself !!")
-    private String about;
+//    @NotBlank(message = "Write something about yourself !!")
+//    private String about;
 
     private List<RoleDto> roles;
 

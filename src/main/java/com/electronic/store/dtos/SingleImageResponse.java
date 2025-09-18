@@ -10,11 +10,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ImageResponse {
+public class SingleImageResponse {
 
-    private List<String> imageNames;
-    private String message;
-    private boolean success;
-    private HttpStatus status;
+        private String imageName;
+        private String message;
+        private boolean success;
+        private HttpStatus status;
 }
-

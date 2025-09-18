@@ -8,32 +8,30 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "categories")
-public class Category {
+@Table(name = "collections")
+public class Collection {
 
     @Id
     @Column(name = "id")
-    private String categoryId;
+    private String collectionId;
 
-    @Column(name = "category_title", length = 60, nullable = false)
+    @Column(name = "collection_title", length = 60, nullable = false)
     private String title;
 
-    @Column(name = "category_desc", length = 500)
+    @Column(name = "collection_desc", length = 500)
     private String description;
 
     private String coverImage;
     private Date addedDate;
 
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToMany(mappedBy = "collections", cascade = {CascadeType.PERSIST, CascadeType.MERGE} ,fetch = FetchType.LAZY)
     @JsonIgnore
-    private List<Product> products = new ArrayList<>();
+    private Set<Product> products = new HashSet<>();
 }

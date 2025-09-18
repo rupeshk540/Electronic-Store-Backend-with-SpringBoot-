@@ -1,12 +1,16 @@
 package com.electronic.store.controllers;
 
-import com.electronic.store.dtos.ApiResponseMessage;
-import com.electronic.store.dtos.ImageResponse;
-import com.electronic.store.dtos.PageableResponse;
-import com.electronic.store.dtos.UserDto;
+import com.electronic.store.dtos.*;
 import com.electronic.store.entities.Providers;
+import com.electronic.store.exceptions.ResourceNotFoundException;
 import com.electronic.store.services.FileService;
 import com.electronic.store.services.UserService;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.Getter;
@@ -21,12 +25,18 @@ import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
 @RequestMapping("/users")
+@SecurityRequirement(name = "scheme1")
+@Tag(name = "UserController", description = "Rest APIs related to perform user related operations")
 public class UserController {
 
     @Autowired
@@ -42,6 +52,12 @@ public class UserController {
 
     //create
     @PostMapping
+    @Operation(summary = "create new user !!", description = "This is user api")
+    @ApiResponses(value ={
+            @ApiResponse(responseCode = "200",description = "Success | OK"),
+            @ApiResponse(responseCode = "401",description = "not authorized !!"),
+            @ApiResponse(responseCode = "201",description = "new user created !!")
+    })
     public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserDto userDto){
        userDto.setProvider(Providers.SELF);
         UserDto userDto1 = userService.createUser(userDto);
@@ -70,6 +86,7 @@ public class UserController {
 
     //get all
     @GetMapping
+    @Operation(summary = "get all users")
     public ResponseEntity<PageableResponse<UserDto>> getAllUsers(
             @RequestParam(value = "pageNumber",defaultValue = "0",required = false) int pageNumber,
             @RequestParam(value = "pageSize",defaultValue = "10",required = false) int pageSize,
@@ -81,6 +98,7 @@ public class UserController {
 
     //get single user
     @GetMapping("/{userId}")
+    @Operation(summary = "Get single user by userId !!")
     public ResponseEntity<UserDto> getUser(@PathVariable String userId){
         return new ResponseEntity<>(userService.getUserById(userId),HttpStatus.OK);
     }
@@ -99,12 +117,12 @@ public class UserController {
 
     //upload user image
     @PostMapping("/image/{userId}")
-    public ResponseEntity<ImageResponse> uploadUserImage(@RequestParam ("userImage")MultipartFile image,@PathVariable String userId) throws IOException {
+    public ResponseEntity<SingleImageResponse> uploadUserImage(@RequestParam ("userImage")MultipartFile image, @PathVariable String userId) throws IOException {
         String imageName = fileService.uploadFile(image, imageUploadPath);
         UserDto user = userService.getUserById(userId);
         user.setImageName(imageName);
         UserDto userDto = userService.updateUser(user, userId);
-        ImageResponse imageResponse = ImageResponse.builder().imageName(imageName).success(true).status(HttpStatus.CREATED).message("Image is uploaded successfully").build();
+        SingleImageResponse imageResponse = SingleImageResponse.builder().imageName(imageName).success(true).status(HttpStatus.CREATED).message("Image is uploaded successfully").build();
         return new ResponseEntity<>(imageResponse,HttpStatus.CREATED);
     }
 
@@ -112,9 +130,23 @@ public class UserController {
     @GetMapping("/image/{userId}")
     public void serveUserImage(@PathVariable String userId, HttpServletResponse response) throws IOException {
         UserDto user = userService.getUserById(userId);
+        // Check if user has an image
+        if (user.getImageName() == null || user.getImageName().isEmpty()) {
+            throw new ResourceNotFoundException("Profile image not found for user: " + userId);
+        }
         logger.info("User image name : {}", user.getImageName());
-        InputStream resource = fileService.getResource(imageUploadPath, user.getImageName());
-        response.setContentType(MediaType.IMAGE_JPEG_VALUE);
+        // Load file via FileService
+        InputStream resource;
+        try {
+            resource = fileService.getResource(imageUploadPath, user.getImageName());
+        } catch (FileNotFoundException e) {
+            throw new ResourceNotFoundException("File not found: " + user.getImageName());
+        }
+
+        // Dynamically detect content type
+        Path filePath = Paths.get(imageUploadPath, user.getImageName());
+        String contentType = Files.probeContentType(filePath);
+        response.setContentType(contentType != null ? contentType : MediaType.APPLICATION_OCTET_STREAM_VALUE);
         StreamUtils.copy(resource, response.getOutputStream());
     }
 }

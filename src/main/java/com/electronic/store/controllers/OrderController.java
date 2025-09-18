@@ -7,6 +7,7 @@ import com.electronic.store.dtos.PageableResponse;
 import com.electronic.store.entities.Order;
 import com.electronic.store.repositories.OrderRepository;
 import com.electronic.store.services.OrderService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/orders")
+@SecurityRequirement(name = "scheme1")
 public class OrderController {
 
     @Autowired

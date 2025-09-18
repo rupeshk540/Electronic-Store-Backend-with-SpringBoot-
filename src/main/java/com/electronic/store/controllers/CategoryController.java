@@ -1,9 +1,11 @@
 package com.electronic.store.controllers;
 
 import com.electronic.store.dtos.*;
+import com.electronic.store.exceptions.ResourceNotFoundException;
 import com.electronic.store.services.CategoryService;
 import com.electronic.store.services.FileService;
 import com.electronic.store.services.ProductService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -17,11 +19,15 @@ import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 @RestController
 @RequestMapping("/categories")
+@SecurityRequirement(name = "scheme1")
 public class CategoryController {
 
     @Autowired
@@ -84,24 +90,44 @@ public class CategoryController {
         return ResponseEntity.ok(categoryDto);
     }
 
-    //upload user image
+    //upload category image
     @PostMapping("/image/{categoryId}")
-    public ResponseEntity<ImageResponse> uploadCoverImage(@RequestParam ("coverImage") MultipartFile image, @PathVariable String categoryId) throws IOException {
+    public ResponseEntity<SingleImageResponse> uploadCoverImage(@RequestParam ("coverImage") MultipartFile image, @PathVariable String categoryId) throws IOException {
+        if (image == null || image.isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                    SingleImageResponse.builder()
+                            .message("No image provided")
+                            .status(HttpStatus.BAD_REQUEST)
+                            .success(false)
+                            .build()
+            );
+        }
         String imageName = fileService.uploadFile(image, imageUploadPath);
         CategoryDto category = categoryService.get(categoryId);
         category.setCoverImage(imageName);
         CategoryDto categoryDto = categoryService.update(category, categoryId);
-        ImageResponse imageResponse = ImageResponse.builder().imageName(imageName).success(true).status(HttpStatus.CREATED).message("Image is uploaded successfully").build();
+        SingleImageResponse imageResponse = SingleImageResponse.builder().imageName(imageName).success(true).status(HttpStatus.CREATED).message("Image is uploaded successfully").build();
         return new ResponseEntity<>(imageResponse,HttpStatus.CREATED);
     }
 
-    //serve user image
+    //serve category image
     @GetMapping("/image/{categoryId}")
-    public void serveUserImage(@PathVariable String categoryId, HttpServletResponse response) throws IOException {
+    public void serveCategoryImage(@PathVariable String categoryId, HttpServletResponse response) throws IOException {
         CategoryDto category = categoryService.get(categoryId);
+        // Check if category has a cover image
+        if (category.getCoverImage() == null || category.getCoverImage().isEmpty()) {
+            throw new ResourceNotFoundException("Cover image not found for category: " + categoryId);
+        }
         logger.info("Category coverImage name : {}", category.getCoverImage());
-        InputStream resource = fileService.getResource(imageUploadPath, category.getCoverImage());
-        response.setContentType(MediaType.IMAGE_JPEG_VALUE);
+        InputStream resource;
+        try {
+            resource = fileService.getResource(imageUploadPath, category.getCoverImage());
+        } catch (FileNotFoundException e) {
+            throw new ResourceNotFoundException("File not found: " + category.getCoverImage());
+        }
+
+        String contentType = Files.probeContentType(Paths.get(imageUploadPath, category.getCoverImage()));
+        response.setContentType(contentType != null ? contentType : MediaType.APPLICATION_OCTET_STREAM_VALUE);
         StreamUtils.copy(resource, response.getOutputStream());
     }
 

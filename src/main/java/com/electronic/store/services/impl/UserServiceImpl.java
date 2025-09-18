@@ -78,8 +78,8 @@ public class UserServiceImpl implements UserService {
 
         User user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found with given Id !!"));
         user.setName(userDto.getName());
-        user.setAbout(userDto.getAbout());
-        user.setGender(userDto.getGender());
+//        user.setAbout(userDto.getAbout());
+//        user.setGender(userDto.getGender());
         user.setPassword(passwordEncoder.encode(userDto.getPassword()));
         user.setImageName(userDto.getImageName());
 

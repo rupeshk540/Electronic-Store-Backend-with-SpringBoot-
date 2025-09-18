@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
 import java.util.UUID;
 
 @Service
@@ -44,6 +45,7 @@ public class CategoryServiceImpl implements CategoryService {
         //creating categoryId: randomly
         String categoryId = UUID.randomUUID().toString();
         categoryDto.setCategoryId(categoryId);
+        categoryDto.setAddedDate(new Date());
         Category category = mapper.map(categoryDto, Category.class);
         Category savedCategory = categoryRepository.save(category);
         return mapper.map(savedCategory, CategoryDto.class);
@@ -66,16 +68,18 @@ public class CategoryServiceImpl implements CategoryService {
     public void delete(String categoryId) {
         Category category = categoryRepository.findById(categoryId).orElseThrow(() -> new ResourceNotFoundException("Category not found with given id !!"));
 
-        //delete category coverImage
-        String fullPath = imagePath + category.getCoverImage();
-        try{
-            Path path = Paths.get(fullPath);
-            Files.delete(path);
-        }catch (NoSuchFileException ex){
-            logger.info("Category cover image not found in folder");
-            ex.printStackTrace();
-        }catch (IOException e){
-            e.printStackTrace();
+        // delete category coverImage if exists
+        if (category.getCoverImage() != null && !category.getCoverImage().isBlank()) {
+            String fullPath = imagePath + category.getCoverImage();
+            try {
+                Path path = Paths.get(fullPath);
+                Files.deleteIfExists(path);  // safer: won’t throw if file missing
+                logger.info("Deleted category cover image: {}", fullPath);
+            } catch (IOException e) {
+                logger.error("Error deleting category image: {}", e.getMessage());
+            }
+        } else {
+            logger.info("No cover image found for category, skipping delete.");
         }
         categoryRepository.delete(category);
 

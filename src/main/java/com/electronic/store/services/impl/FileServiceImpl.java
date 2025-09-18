@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
 
@@ -49,4 +50,14 @@ public class FileServiceImpl implements FileService {
             InputStream inputStream = new FileInputStream(fullPath);
             return inputStream;
         }
+
+    @Override
+    public boolean deleteFile(String path, String fileName) throws IOException {
+        Path filePath = Paths.get(path, fileName);
+        try {
+            return Files.deleteIfExists(filePath); // returns true if file deleted
+        } catch (IOException e) {
+            throw new IOException("Failed to delete file: " + fileName, e);
+        }
+    }
     }

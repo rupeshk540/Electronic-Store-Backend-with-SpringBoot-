@@ -12,6 +12,8 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.apache.v2.ApacheHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +36,8 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "AuthController", description = "APIs for Authentication !!")
+@SecurityRequirement(name = "scheme1")
 public class AuthenticationController {
 
     @Autowired
@@ -128,7 +132,7 @@ public class AuthenticationController {
             userDto.setEmail(email);
             userDto.setImageName(pictureUrl);
             userDto.setPassword(googleProviderDefaultPassword);
-            userDto.setAbout("User is created using google");
+          //  userDto.setAbout("User is created using google");
             userDto.setProvider(Providers.GOOGLE);
 
             UserDto user=null;
