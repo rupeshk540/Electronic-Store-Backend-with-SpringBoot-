@@ -15,4 +15,7 @@ public interface RefreshTokenService {
     RefreshTokenDto verifyRefreshToken(RefreshTokenDto refreshTokenDto);
 
     UserDto getUser(RefreshTokenDto dto);
+
+    void deleteByToken(String token);
+
 }

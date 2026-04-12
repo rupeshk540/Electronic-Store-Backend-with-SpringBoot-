@@ -1,5 +1,6 @@
 package com.electronic.store.services.impl;
 
+import com.electronic.store.dtos.ImageDto;
 import com.electronic.store.dtos.PageableResponse;
 import com.electronic.store.dtos.ProductDto;
 import com.electronic.store.entities.Category;
@@ -11,6 +12,7 @@ import com.electronic.store.repositories.CategoryRepository;
 import com.electronic.store.repositories.CollectionRepository;
 import com.electronic.store.repositories.ProductRepository;
 import com.electronic.store.services.FileService;
+import com.electronic.store.services.ImageService;
 import com.electronic.store.services.ProductService;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -22,6 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,6 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -39,10 +43,7 @@ public class ProductServiceImpl implements ProductService {
     @Autowired
     private ModelMapper mapper;
     @Autowired
-    private FileService fileService;
-
-    @Value("${product.image.path}")
-    private String imagePath;
+    private ImageService imageService;
 
     @Autowired
     private CategoryRepository categoryRepository;
@@ -52,81 +53,151 @@ public class ProductServiceImpl implements ProductService {
     private Logger logger = LoggerFactory.getLogger(ProductServiceImpl.class);
 
     @Override
-    public ProductDto create(ProductDto productDto) {
+    public ProductDto create(ProductDto productDto, MultipartFile[] images) throws IOException {
         Product product = mapper.map(productDto, Product.class);
         //set random productId
         String productId = UUID.randomUUID().toString();
         product.setProductId(productId);
         //set added date
         product.setAddedDate(new Date());
+
+        // --- Handle image upload ---
+        if (images != null && images.length > 0) {
+            for (MultipartFile file : images) {
+                ImageDto uploadResult = imageService.uploadImage(file);
+                product.getProductImageUrls().add(uploadResult.getUrl());
+                product.getProductImagePublicIds().add(uploadResult.getPublicId());
+            }
+        }
         Product saveProduct = productRepository.save(product);
         return mapper.map(saveProduct, ProductDto.class);
     }
 
+//    @Override
+//    public ProductDto createInCategoryAndCollection(ProductDto productDto, String categoryId, MultipartFile[] images) throws IOException {
+//        Product product = mapper.map(productDto, Product.class);
+//        // Set random productId and added date if needed
+//
+//        // --- Set category ---
+//        Category category = categoryRepository.findById(categoryId)
+//                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+//        product.setCategory(category);
+//
+//        // --- Handle collections ---
+//        if (productDto.getCollectionIds() != null && !productDto.getCollectionIds().isEmpty()) {
+//            List<Collection> collections = collectionRepository.findAllById(productDto.getCollectionIds());
+//            for (Collection col : collections) {
+//                product.addCollection(col); // maintains bidirectional sync
+//            }
+//        }
+//        // --- Handle image upload ---
+//        if (images != null && images.length > 0) {
+//            for (MultipartFile file : images) {
+//                Map<String, Object> uploadResult = imageService.uploadImage(file);
+//                product.getProductImageUrls().add(uploadResult.get("secure_url").toString());
+//                product.getProductImagePublicIds().add(uploadResult.get("public_id").toString());
+//            }
+//        }
+//        Product saved = productRepository.save(product);
+//        return mapper.map(saved, ProductDto.class);
+//    }
+
     @Override
-    public ProductDto createInCategoryAndCollection(ProductDto productDto, String categoryId) {
+    public ProductDto createInCategoryAndCollection(ProductDto productDto, String categoryId, MultipartFile[] images) throws IOException {
 
+        // --- Map DTO → Entity (basic fields only) ---
         Product product = mapper.map(productDto, Product.class);
-        //set random productId
-//        String productId = UUID.randomUUID().toString();
-//        product.setProductId(productId);
-        //set added date
-//        product.setAddedDate(new Date());
-        // Ensure collections is never null after mapping
-        if (product.getCollections() == null) {
-            product.setCollections(new HashSet<>());
-        }
 
-
+        // --- Category ---
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
-
         product.setCategory(category);
 
-        //Handle collections
+        // --- Collections ---
         if (productDto.getCollectionIds() != null && !productDto.getCollectionIds().isEmpty()) {
-            List<Collection> collections = collectionRepository.findAllById(productDto.getCollectionIds());
-            for (Collection col : collections) {
-                product.addCollection(col); // maintains bidirectional sync
-            }
+            Set<Collection> collections = new HashSet<>(collectionRepository.findAllById(productDto.getCollectionIds()));
+            product.setCollections(collections);
         }
+
+        // --- Images ---
+        if (images != null && images.length > 0) {
+            List<String> urls = new ArrayList<>();
+            List<String> publicIds = new ArrayList<>();
+
+            for (MultipartFile file : images) {
+                ImageDto result = imageService.uploadImage(file);
+                urls.add(result.getUrl());
+                publicIds.add(result.getPublicId());
+            }
+
+            product.setProductImageUrls(urls);
+            product.setProductImagePublicIds(publicIds);
+        }
+
+        // --- Save product ---
         Product saved = productRepository.save(product);
-        return mapper.map(saved, ProductDto.class);
+
+        // --- Map Entity → DTO for response ---
+        ProductDto response = mapper.map(saved, ProductDto.class);
+
+        // Set IDs explicitly (since we don’t want full category/collections in DTO)
+        response.setCategoryId(saved.getCategory().getCategoryId());
+        response.setCollectionIds(saved.getCollections() != null
+                ? saved.getCollections().stream().map(Collection::getCollectionId).collect(Collectors.toSet())
+                : Collections.emptySet());
+
+        return response;
     }
 
+
+
     @Override
-    public ProductDto update(ProductDto productDto, String productId) {
+    public ProductDto update(ProductDto productDto, String productId,MultipartFile[] images) throws IOException {
 
         //fetch the product of given id
         Product product = productRepository.findById(productId).orElseThrow(()-> new ResourceNotFoundException("Product not found for given Id !!"));
-        // Keep copy of old images before modifying
-        List<String> oldImages = new ArrayList<>(product.getProductImageNames());
 
-        product.setTitle(productDto.getTitle());
-        product.setDescription(productDto.getDescription());
-        product.setPrice(productDto.getPrice());
-        product.setDiscountedPrice(productDto.getDiscountedPrice());
-        product.setQuantity(productDto.getQuantity());
-        product.setLive(productDto.isLive());
-        product.setStock(productDto.getStock());
-        // Replace images with new list from frontend
-        if (productDto.getProductImageNames() != null) {
-            List<String> newImages = new ArrayList<>(productDto.getProductImageNames());
+        // update fields only if not null
+        if (productDto.getTitle() != null) product.setTitle(productDto.getTitle());
+        if (productDto.getDescription() != null) product.setDescription(productDto.getDescription());
+        if (productDto.getPrice() != null) product.setPrice(productDto.getPrice());
+        if (productDto.getDiscountedPrice() != null) product.setDiscountedPrice(productDto.getDiscountedPrice());
+        if (productDto.getLive() != null) product.setLive(productDto.getLive());
+        if (productDto.getStock() != null) product.setStock(productDto.getStock());
 
-            // Find deleted images and remove them physically
-            oldImages.stream()
-                    .filter(img -> !newImages.contains(img))  // deleted images
-                    .forEach(img -> {
-                        try {
-                            fileService.deleteFile(imagePath, img);
-                        } catch (IOException e) {
-                            logger.error("Failed to delete image file: {}", img, e);
-                        }
-                    });
+        // --- handle images ---
+        if ((images != null && images.length > 0) || productDto.getProductImageUrls() != null) {
 
+            // Step 1: Delete removed images (but at least one must remain, frontend ensures this)
+            if (productDto.getProductImageUrls() != null) {
+                List<String> urlsToKeep = productDto.getProductImageUrls();
 
-            // Set new images list
-            product.setProductImageNames(newImages);
+                // Map old URLs -> publicIds
+                Map<String, String> oldUrlToPublicId = new HashMap<>();
+                for (int i = 0; i < product.getProductImageUrls().size(); i++) {
+                    oldUrlToPublicId.put(product.getProductImageUrls().get(i),
+                            product.getProductImagePublicIds().get(i));
+                }
+
+                // Delete images not in urlsToKeep
+                for (String oldUrl : oldUrlToPublicId.keySet()) {
+                    if (!urlsToKeep.contains(oldUrl)) {
+                        imageService.deleteImage(oldUrlToPublicId.get(oldUrl));
+                        product.getProductImageUrls().remove(oldUrl);
+                        product.getProductImagePublicIds().remove(oldUrlToPublicId.get(oldUrl));
+                    }
+                }
+            }
+
+            // Step 2: Upload new images
+            if (images != null && images.length > 0) {
+                for (MultipartFile file : images) {
+                    ImageDto uploadResult = imageService.uploadImage(file);
+                    product.getProductImageUrls().add(uploadResult.getUrl());
+                    product.getProductImagePublicIds().add(uploadResult.getPublicId());
+                }
+            }
+
         }
         // Update collections only if provided
         if (productDto.getCollectionIds() != null) {
@@ -146,29 +217,16 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public void delete(String productId) {
         Product product = productRepository.findById(productId).orElseThrow(()-> new ResourceNotFoundException("Product not found for given Id !!"));
-        // --- Handle image deletion ---
-        if (product.getProductImageNames() != null && !product.getProductImageNames().isEmpty()) {
-            for (String imageName : product.getProductImageNames()) {
-                String fullPath = imagePath + imageName;
+        if (product.getProductImagePublicIds() != null) {
+            for (String publicId : product.getProductImagePublicIds()) {
                 try {
-                    Path path = Paths.get(fullPath);
-                    Files.deleteIfExists(path);
-                    logger.info("Deleted product image: {}", fullPath);
+                    imageService.deleteImage(publicId);
                 } catch (IOException e) {
-                    logger.warn("Could not delete image file: {}", fullPath, e);
+                    logger.warn("Failed to delete Cloudinary image: {}", publicId, e);
                 }
             }
         }
-//        try {
-//            Path path = Paths.get(fullPath);
-//            Files.delete(path);
-//            logger.info("File deleted successfully: " + fullPath);
-//        } catch (NoSuchFileException ex) {
-//            logger.warn("File not found, unable to delete: " + fullPath, ex);
-//        } catch (IOException e) {
-//            logger.error("Error deleting file: " + fullPath, e);
-//        }
-        // --- Handle collections (detach before delete if needed) ---
+        // Handle collections (detach before delete if needed) ---
         if (product.getCollections() != null) {
             for (Collection col : product.getCollections()) {
                 col.getProducts().remove(product);  // break bidirectional link

@@ -1,15 +1,17 @@
 package com.electronic.store.services;
 
-import com.electronic.store.dtos.CreateOrderRequest;
-import com.electronic.store.dtos.OrderDto;
-import com.electronic.store.dtos.PageableResponse;
+import com.electronic.store.dtos.*;
+import com.razorpay.RazorpayException;
 
 import java.util.List;
 
 public interface OrderService {
 
-    //create order
-    OrderDto createOrder(CreateOrderRequest orderDto);
+    //create oder and initialize payment
+    PaymentInitResponse createOrderAndInitPayment(OrderRequest request) throws RazorpayException;
+
+    //verify payment
+    ApiResponseMessage verifyAndCompleteOrder(PaymentVerifyRequest verifyRequest);
 
     //remove order
     void removeOrder(String orderId);
@@ -21,5 +23,5 @@ public interface OrderService {
     PageableResponse<OrderDto> getOrders(int pageNumber,int pageSize,String sortBy,String sortDir);
 
     //update order
-    OrderDto updateOrder(String orderId,CreateOrderRequest request);
+    OrderDto updateOrder(String orderId, UpdateOrderRequest request);
 }

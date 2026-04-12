@@ -1,6 +1,7 @@
 package com.electronic.store.services.impl;
 
 import com.electronic.store.dtos.AdminStatsResponse;
+import com.electronic.store.entities.enums.OrderStatus;
 import com.electronic.store.repositories.*;
 import com.electronic.store.services.AdminService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +29,7 @@ public class AdminServiceImpl implements AdminService {
         long collections = collectionRepository.count();
         long users = userRepository.count();
         long orders = orderRepository.count();
-        long pendingOrders = orderRepository.countByorderStatus("PENDING");
+        long pendingOrders = orderRepository.countByOrderStatus(OrderStatus.PENDING);
         long lowStock = productRepository.countByStockLessThan(10);
 
         return new AdminStatsResponse(products, categories, collections,

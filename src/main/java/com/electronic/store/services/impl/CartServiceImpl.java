@@ -14,6 +14,8 @@ import com.electronic.store.repositories.ProductRepository;
 import com.electronic.store.repositories.UserRepository;
 import com.electronic.store.services.CartService;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -38,6 +40,7 @@ public class CartServiceImpl implements CartService {
     private CartItemRepository cartItemRepository;
     @Autowired
     private ModelMapper mapper;
+    private Logger logger = LoggerFactory.getLogger(CartServiceImpl.class);
 
     @Override
     public CartDto addItemToCart(String userId, AddItemToCartRequest request) {
@@ -54,7 +57,7 @@ public class CartServiceImpl implements CartService {
 
         Cart cart = null;
         try {
-            cart = cartRepository.findByUser(user).get();
+            cart = cartRepository.findByUserId(userId).get();
         }catch (NoSuchElementException e){
             cart = new Cart();
             cart.setCartId(UUID.randomUUID().toString());
@@ -88,7 +91,7 @@ public class CartServiceImpl implements CartService {
            cart.getItems().add(cartItem);
        }
 
-        cart.setUser(user);
+        cart.setUserId(userId);
         Cart updatedCart = cartRepository.save(cart);
         return mapper.map(updatedCart, CartDto.class);
     }
@@ -105,7 +108,7 @@ public class CartServiceImpl implements CartService {
     public void clearCart(String userId) {
         //fetch the user from db
         User user = userRepository.findById(userId).orElseThrow(()->new ResourceNotFoundException("User not found for given Id !!"));
-        Cart cart = cartRepository.findByUser(user).orElseThrow(()-> new ResourceNotFoundException("Cart not found !!"));
+        Cart cart = cartRepository.findByUserId(userId).orElseThrow(()-> new ResourceNotFoundException("Cart not found !!"));
         cart.getItems().clear();
         cartRepository.save(cart);
     }
@@ -113,7 +116,7 @@ public class CartServiceImpl implements CartService {
     @Override
     public CartDto getCartByUser(String userId) {
         User user = userRepository.findById(userId).orElseThrow(()->new ResourceNotFoundException("User not found for given Id !!"));
-        Cart cart = cartRepository.findByUser(user).orElseThrow(()-> new ResourceNotFoundException("Cart not found !!"));
+        Cart cart = cartRepository.findByUserId(userId).orElseThrow(()-> new ResourceNotFoundException("Cart not found !!"));
         return mapper.map(cart,CartDto.class);
     }
 }

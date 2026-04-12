@@ -30,14 +30,15 @@ public class User implements UserDetails {
     private String email;
     @Column(name = "user_password", length = 500)
     private String password;
-//    private String gender;
-//    @Column(length =1000 )
-//    private String about;
     @Column(name = "user_image_name")
     private String imageName;
 
-    @OneToMany(mappedBy = "user",fetch = FetchType.LAZY,cascade = CascadeType.REMOVE)
-    private List<Order> orders = new ArrayList<>();
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Wishlist wishlist;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Address> addresses = new ArrayList<>();
+
 
     @ManyToMany(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
     private List<Role> roles = new ArrayList<>();

@@ -26,7 +26,7 @@ public class Product {
     private int price;
     private int discountedPrice;
     private int rentalPrice;
-    private int quantity;
+//    private int quantity;
     private Date addedDate;
     private boolean live;
     private int stock;

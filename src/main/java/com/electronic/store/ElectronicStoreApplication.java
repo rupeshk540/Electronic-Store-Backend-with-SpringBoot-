@@ -17,9 +17,9 @@ import java.util.UUID;
 
 @SpringBootApplication
 //@EnableWebMvc
-public class ElectronicStoreApplication {
+public class ElectronicStoreApplication{
 
-	public static void main(String[] args) {
+	public static void main(String[] args)  {
 
 		SpringApplication.run(ElectronicStoreApplication.class, args);
 	}
@@ -50,8 +50,8 @@ public class ElectronicStoreApplication {
 //			roleNormal.setName("ROLE_NORMAL");
 //			roleRepository.save(roleNormal);
 //		}
-////
-		//admin user
+//////
+//		//admin user
 //		User user = userRepository.findByEmail("rupesh@gmail.com").orElse(null);
 //		if(user == null){
 //			user = new User();
@@ -62,8 +62,8 @@ public class ElectronicStoreApplication {
 //			user.setUserId(UUID.randomUUID().toString());
 //			userRepository.save(user);
 //		}
-
 //
 //
-	//}
+//
+//	}
 }

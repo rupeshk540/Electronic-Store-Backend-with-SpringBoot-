@@ -1,12 +1,10 @@
 package com.electronic.store.controllers;
 
-import com.electronic.store.dtos.ApiResponseMessage;
-import com.electronic.store.dtos.CreateOrderRequest;
-import com.electronic.store.dtos.OrderDto;
-import com.electronic.store.dtos.PageableResponse;
+import com.electronic.store.dtos.*;
 import com.electronic.store.entities.Order;
 import com.electronic.store.repositories.OrderRepository;
 import com.electronic.store.services.OrderService;
+import com.razorpay.RazorpayException;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -29,9 +27,17 @@ public class OrderController {
     //create
     @PreAuthorize("hasAnyRole('NORMAL','ADMIN')")
     @PostMapping
-    public ResponseEntity<OrderDto> createOrder(@Valid @RequestBody CreateOrderRequest request){
-        OrderDto order = orderService.createOrder(request);
-        return new ResponseEntity<>(order, HttpStatus.CREATED);
+    public ResponseEntity<PaymentInitResponse> createOrder(@Valid @RequestBody OrderRequest request) throws RazorpayException {
+        PaymentInitResponse response = orderService.createOrderAndInitPayment(request);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    //  Verify payment after frontend callback
+    @PreAuthorize("hasAnyRole('NORMAL','ADMIN')")
+    @PostMapping("/verify")
+    public ResponseEntity<ApiResponseMessage> verifyPayment(@RequestBody PaymentVerifyRequest verifyRequest) {
+        ApiResponseMessage response = orderService.verifyAndCompleteOrder(verifyRequest);
+        return ResponseEntity.status(response.getStatus()).body(response);
     }
 
     //remove order
@@ -70,10 +76,11 @@ public class OrderController {
     }
 
     //update order
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{orderId}")
     public ResponseEntity<OrderDto> updateOrder(
             @PathVariable String orderId,
-            @RequestBody CreateOrderRequest request
+            @RequestBody UpdateOrderRequest request
     ){
         OrderDto order = orderService.updateOrder(orderId,request);
         return new ResponseEntity<>(order, HttpStatus.CREATED);

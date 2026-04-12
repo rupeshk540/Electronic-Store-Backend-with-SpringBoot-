@@ -11,8 +11,10 @@ import lombok.*;
 @ToString
 public class OrderItemDto {
 
-    private int orderItemId;
-    private int quantity;
-    private int totalPrice;
-    private ProductDto product;
+    private Long orderItemId;
+    private String productId;
+    private String productTitle;
+    private Double price;
+    private Integer quantity;
+    private Double subtotal;
 }

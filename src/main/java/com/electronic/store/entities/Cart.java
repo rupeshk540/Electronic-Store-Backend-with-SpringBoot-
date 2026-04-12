@@ -19,8 +19,8 @@ public class Cart {
     @Id
     private String cartId;
     private Date createdAt;
-    @OneToOne
-    private User user;
+    @Column(nullable = false)
+    private String userId;
 
     //mapping cart-item
     @OneToMany(mappedBy = "cart",cascade = CascadeType.ALL,orphanRemoval = true)

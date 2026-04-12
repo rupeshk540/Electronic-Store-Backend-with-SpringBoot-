@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Date;
+import java.util.List;
 
 @Getter
 @Setter
@@ -28,4 +29,5 @@ public class CategoryDto {
 
     private String coverImage;
     private Date addedDate;
+    private List<ProductDto> products;
 }

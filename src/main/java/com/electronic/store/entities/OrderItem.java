@@ -14,13 +14,15 @@ public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int orderItemId;
-    private int quantity;
-    private int totalPrice;
-    @ManyToOne
-    @JoinColumn(name = "product_id")
-    private Product product;
-    @ManyToOne
-    @JoinColumn(name = "order_id")
+    private Long orderItemId;
+    private String productId;        // reference only
+    private String productTitle;    // snapshot
+    //private String productImage;   // snapshot
+    private Double price;          // snapshot price
+    private Integer quantity;
+    private Double subtotal;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id",nullable = false)
     private Order order;
 }

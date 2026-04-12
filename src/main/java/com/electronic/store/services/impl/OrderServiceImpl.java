@@ -1,28 +1,33 @@
 package com.electronic.store.services.impl;
 
-import com.electronic.store.dtos.CreateOrderRequest;
-import com.electronic.store.dtos.OrderDto;
-import com.electronic.store.dtos.PageableResponse;
+import com.electronic.store.dtos.*;
 import com.electronic.store.entities.*;
+import com.electronic.store.entities.enums.OrderStatus;
+import com.electronic.store.entities.enums.PaymentMethod;
+import com.electronic.store.entities.enums.PaymentStatus;
 import com.electronic.store.exceptions.BadApiRequestException;
 import com.electronic.store.exceptions.ResourceNotFoundException;
 import com.electronic.store.helper.Helper;
-import com.electronic.store.repositories.CartRepository;
-import com.electronic.store.repositories.OrderRepository;
-import com.electronic.store.repositories.UserRepository;
+import com.electronic.store.repositories.*;
+import com.electronic.store.services.CartService;
 import com.electronic.store.services.OrderService;
+import com.electronic.store.services.PaymentService;
+import com.razorpay.RazorpayException;
+import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,55 +40,147 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private CartRepository cartRepository;
     @Autowired
-    private ModelMapper modalMapper;
+    private AddressRepository addressRepository;
+    @Autowired
+    private PaymentRepository paymentRepository;
+    @Autowired
+    private PaymentService paymentService;
+    @Autowired
+    private CartService cartService;
+    @Autowired
+    private ModelMapper modelMapper;
+    private Logger logger = LoggerFactory.getLogger(OrderService.class);
 
 
     @Override
-    public OrderDto createOrder(CreateOrderRequest orderDto) {
-        String userId = orderDto.getUserId();
-        String cartId = orderDto.getCartId();
-        //fetch user
-        User user = userRepository.findById(userId).orElseThrow(()->new ResourceNotFoundException("User not found with given id !!"));
-        //fetch cart
-        Cart cart = cartRepository.findById(cartId).orElseThrow(()->new ResourceNotFoundException("Cart not found in DB !!"));
-
-        List<CartItem> cartItems = cart.getItems();
-        if(cartItems.size() <= 0){
-            throw new BadApiRequestException("Cart is Empty !!");
+    @Transactional
+    public PaymentInitResponse createOrderAndInitPayment(OrderRequest request) throws RazorpayException {
+        //1.Validate user and address
+        if (!userRepository.existsById(request.getUserId())) {
+            throw new ResourceNotFoundException("User not found with ID: " + request.getUserId());
         }
 
-        Order order = Order.builder()
-                .billingName(orderDto.getBillingName())
-                .billingPhone(orderDto.getBillingPhone())
-                .billingAddress(orderDto.getBillingAddress())
-                .orderedDate(new Date())
-                .deliveredDate(null)
-                .paymentStatus(orderDto.getPaymentStatus())
-                .orderStatus(orderDto.getOrderStatus())
-                .orderId(UUID.randomUUID().toString())
-                .user(user)
+        if (!addressRepository.existsById(request.getAddressId())) {
+            throw new ResourceNotFoundException("Address not found with ID: " + request.getAddressId());
+        }
+
+        // 2.Create and build Payment (not yet persisted)
+        Payment payment = Payment.builder()
+                .paymentMethod(request.getPaymentMethod())
+                .amount(request.getTotalAmount())
+                .currency("INR")
+                .status(PaymentStatus.PENDING)
+                .paymentDate(LocalDateTime.now())
                 .build();
 
-        AtomicReference<Integer> orderAmount=new AtomicReference<>(0);
-        List<OrderItem> orderItems = cartItems.stream().map(cartItem -> {
-            //cartItem->OrderItem
-            OrderItem orderItem = OrderItem.builder()
-                    .quantity(cartItem.getQuantity())
-                    .product(cartItem.getProduct())
-                    .totalPrice(cartItem.getQuantity()*cartItem.getProduct().getDiscountedPrice())
-                    .order(order)
-                    .build();
-            orderAmount.set(orderAmount.get()+orderItem.getTotalPrice());
-            return orderItem;
-        }).collect(Collectors.toList());
+        //3. Create and build Order
+        Order order = Order.builder()
+                .orderId(UUID.randomUUID().toString())
+                .userId(request.getUserId())
+                .addressId(request.getAddressId())
+                .phone(request.getPhone())
+                .email(request.getEmail())
+                .subtotal(request.getSubtotal())
+                .shippingFee(request.getShippingFee())
+                .discount(request.getDiscount())
+                .totalAmount(request.getTotalAmount())
+                .orderStatus(OrderStatus.PENDING)
+                .shippingMethod(request.getShippingMethod())
+                .notes(request.getNotes())
+                .payment(payment)   // link payment
+                .build();
 
+        // link order ↔ payment bidirectionally
+        payment.setOrder(order);
+
+        // 4. Map and attach OrderItems
+        List<OrderItem> orderItems = request.getOrderItems().stream()
+                .map(itemReq -> OrderItem.builder()
+                        .productId(itemReq.getProductId())
+                        .productTitle(itemReq.getProductTitle())
+                        .price(itemReq.getPrice())
+                        .quantity(itemReq.getQuantity())
+                        .subtotal(itemReq.getPrice() * itemReq.getQuantity())
+                        .build())
+                .collect(Collectors.toList());
+
+        orderItems.forEach(item -> item.setOrder(order));
         order.setOrderItems(orderItems);
-        order.setOrderAmount(orderAmount.get());
 
-        cart.getItems().clear();
-        cartRepository.save(cart);
-        Order savedOrder = orderRepository.save(order);
-        return modalMapper.map(savedOrder,OrderDto.class);
+        //5. save order (will cascade items + payment)
+        Order order1 = orderRepository.save(order);
+
+        logger.info("Order created with ID: {}", order1.getOrderId());
+
+        // If order came from cart, clear it
+        if (request.getFromCart()) {
+            cartService.clearCart(request.getUserId());
+            logger.info("Cart cleared for user: {}", request.getUserId());
+        }
+
+        //6. Initialize payment (Razorpay etc.)
+        OrderDto orderDto = modelMapper.map(order1, OrderDto.class);
+        PaymentInitResponse paymentInit = paymentService.initializePayment(orderDto);
+
+        //Update DB (gatewayOrderId)
+        if (request.getPaymentMethod() != PaymentMethod.COD && paymentInit.getGatewayOrderId() != null) {
+            payment.setGatewayOrderId(paymentInit.getGatewayOrderId());
+            paymentRepository.save(payment);
+        }
+
+        return paymentInit;
+    }
+
+    @Override
+    public ApiResponseMessage verifyAndCompleteOrder(PaymentVerifyRequest request) {
+        logger.info("Verifying payment for orderId: {}", request.getOrderId());
+
+        Order order = orderRepository.findById(request.getOrderId())
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        Payment payment = order.getPayment();
+        if (payment == null)
+            throw new ResourceNotFoundException("No payment linked to order");
+
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            logger.warn(" Payment already verified for {}", order.getOrderId());
+            ApiResponseMessage response = ApiResponseMessage.builder()
+                    .message("Payment verified successfully and order placed.")
+                    .success(true)
+                    .status(HttpStatus.OK)
+                    .build();
+            return response;
+        }
+
+        // verify signature securely
+        boolean isValid = paymentService.verifyPaymentSignature(
+                request.getGatewayOrderId(),
+                request.getPaymentId(),
+                request.getSignature()
+        );
+
+        if (!isValid)
+            throw new BadApiRequestException("Invalid payment signature!");
+
+        // update payment + order
+        payment.setTransactionId(request.getPaymentId());
+        payment.setGatewayOrderId(request.getGatewayOrderId());
+        payment.setSignature(request.getSignature());
+        payment.setStatus(PaymentStatus.SUCCESS);
+        payment.setPaymentDate(LocalDateTime.now());
+        paymentRepository.save(payment);
+
+        order.setOrderStatus(OrderStatus.PLACED);
+        order.setUpdatedAt(LocalDateTime.now());
+        orderRepository.save(order);
+
+        logger.info("Order placed successfully: {}", order.getOrderId());
+        ApiResponseMessage response = ApiResponseMessage.builder()
+                .message("Payment verified successfully and order placed.")
+                .success(true)
+                .status(HttpStatus.OK)
+                .build();
+        return response;
     }
 
     @Override
@@ -95,8 +192,8 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<OrderDto> getOrderOfUser(String userId) {
         User user = userRepository.findById(userId).orElseThrow(()->new ResourceNotFoundException("User not found !!"));
-        List<Order> orders = orderRepository.findByUser(user);
-        List<OrderDto> orderDtos = orders.stream().map(order -> modalMapper.map(order,OrderDto.class)).collect(Collectors.toList());
+        List<Order> orders = orderRepository.findByUserId(userId);
+        List<OrderDto> orderDtos = orders.stream().map(order -> modelMapper.map(order,OrderDto.class)).collect(Collectors.toList());
         return orderDtos;
     }
 
@@ -109,13 +206,34 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderDto updateOrder(String orderId,CreateOrderRequest request) {
-        Order order = orderRepository.findById(orderId).orElseThrow(()->new ResourceNotFoundException("Order not found !!"));
-            order.setBillingName(request.getBillingName());
-            order.setBillingAddress(request.getBillingAddress());
-            order.setBillingPhone(request.getBillingPhone());
+    public OrderDto updateOrder(String orderId,UpdateOrderRequest request) {
+        // Fetch existing order
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found !!"));
 
-        Order savedOrder = orderRepository.save(order);
-        return modalMapper.map(savedOrder,OrderDto.class);
+        // Update order status if provided
+        if (request.getOrderStatus() != null) {
+            order.setOrderStatus(request.getOrderStatus());
+        }
+
+        // Update payment status if provided
+        if (request.getPaymentStatus() != null) {
+            Payment payment = order.getPayment();
+            if (payment != null) {
+                payment.setStatus(request.getPaymentStatus());
+                payment.setPaymentDate(LocalDateTime.now()); // optional, update timestamp
+            } else {
+                throw new BadApiRequestException("Payment not found for this order !!");
+            }
+        }
+
+        // Update timestamp
+        order.setUpdatedAt(LocalDateTime.now());
+
+        // Save the updated order
+        Order updatedOrder = orderRepository.save(order);
+
+        // Return mapped DTO
+        return modelMapper.map(updatedOrder, OrderDto.class);
     }
 }

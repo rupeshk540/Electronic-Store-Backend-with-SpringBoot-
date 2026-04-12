@@ -1,11 +1,12 @@
 package com.electronic.store.repositories;
 
-import com.electronic.store.entities.Cart;
 import com.electronic.store.entities.User;
+import com.electronic.store.entities.Wishlist;
 import org.springframework.data.jpa.repository.JpaRepository;
+
 import java.util.Optional;
 
-public interface CartRepository extends JpaRepository<Cart,String> {
+public interface WishlistRepository extends JpaRepository<Wishlist,String> {
 
-   Optional<Cart> findByUserId(String userId);
+    Optional<Wishlist> findByUser(User user);
 }

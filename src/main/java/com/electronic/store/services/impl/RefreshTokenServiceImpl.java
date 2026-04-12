@@ -68,4 +68,12 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         User user = refreshToken.getUser();
         return modelMapper.map(user, UserDto.class);
     }
+
+    @Override
+    public void deleteByToken(String token) {
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
+                .orElseThrow(() -> new ResourceNotFoundException("Token not found !!"));
+        refreshTokenRepository.delete(refreshToken);
+    }
+
 }
