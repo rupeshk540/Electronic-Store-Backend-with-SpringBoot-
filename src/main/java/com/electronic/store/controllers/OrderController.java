@@ -85,4 +85,15 @@ public class OrderController {
         OrderDto order = orderService.updateOrder(orderId,request);
         return new ResponseEntity<>(order, HttpStatus.CREATED);
     }
+
+    //cancel order
+    @PreAuthorize("hasAnyRole('NORMAL','ADMIN')")
+    @PutMapping("/cancel/{orderId}")
+    public ResponseEntity<OrderDto> cancelOrder(
+            @PathVariable String orderId){
+
+        OrderDto cancelledOrder = orderService.cancelOrder(orderId);
+
+        return ResponseEntity.ok(cancelledOrder);
+    }
 }

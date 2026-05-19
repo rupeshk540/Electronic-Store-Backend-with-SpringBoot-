@@ -30,7 +30,8 @@ public class Product {
     private Date addedDate;
     private boolean live;
     private int stock;
-    private int rating;
+    private Double averageRating = 0.0;
+    private Integer totalReviews = 0;
 
     @ElementCollection
     @CollectionTable(name = "product_image_urls",joinColumns = @JoinColumn(name = "product_id"))

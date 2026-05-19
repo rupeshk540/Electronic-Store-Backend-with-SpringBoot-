@@ -236,4 +236,25 @@ public class OrderServiceImpl implements OrderService {
         // Return mapped DTO
         return modelMapper.map(updatedOrder, OrderDto.class);
     }
+
+    @Override
+    public OrderDto cancelOrder(String orderId) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if(order.getOrderStatus() == OrderStatus.SHIPPED ||
+                order.getOrderStatus() == OrderStatus.DELIVERED){
+
+            throw new BadApiRequestException(
+                    "Order cannot be cancelled now"
+            );
+        }
+
+        order.setOrderStatus(OrderStatus.CANCELLED);
+
+        Order savedOrder = orderRepository.save(order);
+
+        return modelMapper.map(savedOrder, OrderDto.class);
+    }
 }
