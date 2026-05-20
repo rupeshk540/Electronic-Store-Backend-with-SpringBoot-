@@ -67,7 +67,7 @@ public class OrderController {
     public ResponseEntity<PageableResponse<OrderDto>> getOrders(
         @RequestParam(value = "pageNumber",defaultValue = "0",required = false) int pageNumber,
         @RequestParam(value = "pageSize",defaultValue = "10",required = false) int pageSize,
-        @RequestParam(value = "sortBy",defaultValue = "orderedDate",required = false) String sortBy,
+        @RequestParam(value = "sortBy",defaultValue = "orderDate",required = false) String sortBy,
         @RequestParam(value = "sortDir",defaultValue = "desc",required = false) String sortDir
     ){
 

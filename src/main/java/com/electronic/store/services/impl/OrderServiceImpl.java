@@ -64,6 +64,13 @@ public class OrderServiceImpl implements OrderService {
             throw new ResourceNotFoundException("Address not found with ID: " + request.getAddressId());
         }
 
+
+        // ORDER STATUS
+        OrderStatus orderStatus =
+                request.getPaymentMethod() == PaymentMethod.COD
+                        ? OrderStatus.PLACED
+                        : OrderStatus.PENDING;
+
         // 2.Create and build Payment (not yet persisted)
         Payment payment = Payment.builder()
                 .paymentMethod(request.getPaymentMethod())
@@ -84,7 +91,7 @@ public class OrderServiceImpl implements OrderService {
                 .shippingFee(request.getShippingFee())
                 .discount(request.getDiscount())
                 .totalAmount(request.getTotalAmount())
-                .orderStatus(OrderStatus.PENDING)
+                .orderStatus(orderStatus)
                 .shippingMethod(request.getShippingMethod())
                 .notes(request.getNotes())
                 .payment(payment)   // link payment
@@ -116,6 +123,18 @@ public class OrderServiceImpl implements OrderService {
         if (request.getFromCart()) {
             cartService.clearCart(request.getUserId());
             logger.info("Cart cleared for user: {}", request.getUserId());
+        }
+
+        // FOR COD
+        if (request.getPaymentMethod() == PaymentMethod.COD) {
+
+            PaymentInitResponse response = new PaymentInitResponse();
+
+            response.setOrderId(order1.getOrderId());
+            response.setSuccess(true);
+            response.setMessage("COD Order placed successfully");
+
+            return response;
         }
 
         //6. Initialize payment (Razorpay etc.)

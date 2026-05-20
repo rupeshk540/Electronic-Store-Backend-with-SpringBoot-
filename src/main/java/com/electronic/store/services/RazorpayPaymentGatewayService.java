@@ -37,7 +37,8 @@ public class RazorpayPaymentGatewayService {
                     razorpayKeyId,
                     order.getTotalAmount(),
                     "INR",
-                    "Payment initialized successfully"
+                    "Payment initialized successfully",
+                    true
             );
         } catch (Exception e) {
             throw new RuntimeException("Razorpay order creation failed", e);

@@ -17,4 +17,5 @@ public class PaymentInitResponse {
     private Double amount;
     private String currency;
     private String message;
+    private boolean success;
 }
