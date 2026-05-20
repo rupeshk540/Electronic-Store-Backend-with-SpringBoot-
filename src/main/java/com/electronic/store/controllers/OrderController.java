@@ -96,4 +96,12 @@ public class OrderController {
 
         return ResponseEntity.ok(cancelledOrder);
     }
+
+    @PutMapping("/return/{orderId}")
+    public ResponseEntity<OrderDto> requestReturn(@PathVariable String orderId){
+
+        OrderDto order = orderService.requestReturn(orderId);
+
+        return ResponseEntity.ok(order);
+    }
 }

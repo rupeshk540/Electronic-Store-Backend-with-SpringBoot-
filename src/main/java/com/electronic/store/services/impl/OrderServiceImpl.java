@@ -276,4 +276,23 @@ public class OrderServiceImpl implements OrderService {
 
         return modelMapper.map(savedOrder, OrderDto.class);
     }
+
+    @Override
+    public OrderDto requestReturn(String orderId) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Order not found"));
+
+        if(order.getOrderStatus() != OrderStatus.DELIVERED){
+            throw new BadApiRequestException(
+                    "Only delivered orders can be returned");
+        }
+
+        order.setOrderStatus(OrderStatus.RETURN_REQUESTED);
+
+        Order saved = orderRepository.save(order);
+
+        return modelMapper.map(saved, OrderDto.class);
+    }
 }

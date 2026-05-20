@@ -27,4 +27,7 @@ public interface OrderService {
 
     //cancel order
     OrderDto cancelOrder(String orderId);
+
+    //request for return
+    OrderDto requestReturn(String orderId);
 }
