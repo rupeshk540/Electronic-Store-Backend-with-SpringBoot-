@@ -2,6 +2,7 @@ package com.electronic.store.controllers;
 
 import com.electronic.store.dtos.*;
 import com.electronic.store.entities.Order;
+import com.electronic.store.entities.enums.OrderStatus;
 import com.electronic.store.repositories.OrderRepository;
 import com.electronic.store.services.OrderService;
 import com.razorpay.RazorpayException;
@@ -84,6 +85,24 @@ public class OrderController {
     ){
         OrderDto order = orderService.updateOrder(orderId,request);
         return new ResponseEntity<>(order, HttpStatus.CREATED);
+    }
+
+    //update order status
+    @PutMapping("/{orderId}/status")
+    public ResponseEntity<OrderDto> updateOrderStatus(
+            @PathVariable String orderId,
+            @RequestParam String orderStatus
+    ) {
+
+        System.out.println("ORDER ID: " + orderId);
+        System.out.println("STATUS: " + orderStatus);
+
+        OrderDto updatedOrder = orderService.updateOrderStatus(
+                orderId,
+                orderStatus
+        );
+
+        return ResponseEntity.ok(updatedOrder);
     }
 
     //cancel order

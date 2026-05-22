@@ -38,5 +38,7 @@ public class OrderDto {
     private String notes;
     private LocalDateTime orderDate;
     private LocalDateTime updatedAt;
+    private String email;
+    private String Phone;
 }
 

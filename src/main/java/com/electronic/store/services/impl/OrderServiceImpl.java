@@ -257,6 +257,20 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public OrderDto updateOrderStatus(String orderId, String status) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Order not found with id : " + orderId));
+
+        order.setOrderStatus(OrderStatus.valueOf(status.toUpperCase()));
+
+        Order savedOrder = orderRepository.save(order);
+
+        return modelMapper.map(savedOrder, OrderDto.class);
+    }
+
+    @Override
     public OrderDto cancelOrder(String orderId) {
 
         Order order = orderRepository.findById(orderId)

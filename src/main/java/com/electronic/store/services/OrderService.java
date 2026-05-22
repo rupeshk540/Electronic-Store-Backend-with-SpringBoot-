@@ -1,6 +1,7 @@
 package com.electronic.store.services;
 
 import com.electronic.store.dtos.*;
+import com.electronic.store.entities.enums.OrderStatus;
 import com.razorpay.RazorpayException;
 
 import java.util.List;
@@ -24,6 +25,9 @@ public interface OrderService {
 
     //update order
     OrderDto updateOrder(String orderId, UpdateOrderRequest request);
+
+    //update order status
+    OrderDto updateOrderStatus(String orderId, String status);
 
     //cancel order
     OrderDto cancelOrder(String orderId);
