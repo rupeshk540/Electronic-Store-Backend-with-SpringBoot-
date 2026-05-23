@@ -309,4 +309,27 @@ public class OrderServiceImpl implements OrderService {
 
         return modelMapper.map(saved, OrderDto.class);
     }
+
+    @Override
+    public OrderStatsDto getOrderStats() {
+
+        long totalOrders = orderRepository.count();
+
+        long placedOrders =
+                orderRepository.countByOrderStatus(OrderStatus.PLACED);
+
+        long deliveredOrders =
+                orderRepository.countByOrderStatus(OrderStatus.DELIVERED);
+
+        double totalRevenue =
+                Optional.ofNullable(orderRepository.getTotalRevenue())
+                        .orElse(0.0);
+
+        return new OrderStatsDto(
+                totalOrders,
+                totalRevenue,
+                placedOrders,
+                deliveredOrders
+        );
+    }
 }

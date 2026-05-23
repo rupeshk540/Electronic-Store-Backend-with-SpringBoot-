@@ -34,4 +34,7 @@ public interface OrderService {
 
     //request for return
     OrderDto requestReturn(String orderId);
+
+    //order stats
+    OrderStatsDto getOrderStats();
 }

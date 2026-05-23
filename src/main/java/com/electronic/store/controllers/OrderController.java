@@ -123,4 +123,12 @@ public class OrderController {
 
         return ResponseEntity.ok(order);
     }
+
+    @GetMapping("/stats")
+    public ResponseEntity<OrderStatsDto> getOrderStats() {
+
+        return ResponseEntity.ok(
+                orderService.getOrderStats()
+        );
+    }
 }
