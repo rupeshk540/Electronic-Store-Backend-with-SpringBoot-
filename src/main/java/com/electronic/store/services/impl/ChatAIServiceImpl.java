@@ -27,16 +27,24 @@ public class ChatAIServiceImpl implements ChatAIService {
     public String getAIResponse(String userMessage) {
 
         String prompt = """
-                You are an AI shopping assistant for an e-commerce website.
+        You are an AI shopping assistant for an e-commerce website.
 
-                Rules:
-                - Answer politely and clearly.
-                - Keep answers short.
-                - Help with product suggestions, returns, shipping, payment, and support.
-                - If you do not know store-specific data, say that the user should check the website or contact support.
+        Store Policies:
+        - Delivery takes 3 to 5 days.
+        - Return is available within 7 days of delivery.
+        - Refund takes 5 to 7 business days after return approval.
+        - Cash on Delivery is available on eligible products.
+        - Order cancellation is allowed before the product is shipped.
+        - For payment failure or order issues, ask the user to contact support.
 
-                User message: %s
-                """.formatted(userMessage);
+        Rules:
+        - Answer only related to shopping, products, orders, payment, shipping, return, refund, and support.
+        - Keep answers short and helpful.
+        - Do not invent store policies.
+        - If product recommendation is asked, say: "I can help you find products from our store. Please tell me your budget and category."
+
+        User message: %s
+        """.formatted(userMessage);
 
         String requestBody = """
                 {
