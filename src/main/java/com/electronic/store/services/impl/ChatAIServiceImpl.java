@@ -96,9 +96,16 @@ public class ChatAIServiceImpl implements ChatAIService {
                 reply.append(i + 1)
                         .append(". ")
                         .append(p.getTitle())
-                        .append(" - ₹")
+                        .append("\n")
+                        .append("Price: ₹")
                         .append(p.getDiscountedPrice())
-                        .append("\n");
+                        .append("\n")
+                        .append("Rating: ⭐ ")
+                        .append(p.getAverageRating())
+                        .append("\n")
+                        .append("View Product: http://localhost:3000/products/")
+                        .append(p.getProductId())
+                        .append("\n\n");
             }
 
             return reply.toString();
