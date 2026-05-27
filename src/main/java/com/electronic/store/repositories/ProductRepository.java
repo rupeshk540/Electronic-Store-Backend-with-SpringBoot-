@@ -6,6 +6,8 @@ import com.electronic.store.entities.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -17,6 +19,18 @@ public interface ProductRepository extends JpaRepository<Product, String> {
     Page<Product>findByCollectionsContains(Collection collection,Pageable pageable);
     long countByStockLessThan(int threshold);
 
+    @Query("""
+        SELECT p FROM Product p
+        WHERE p.live = true
+        AND p.stock > 0
+        AND p.discountedPrice <= :maxPrice
+        AND LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        ORDER BY p.averageRating DESC, p.discountedPrice ASC
+    """)
+    List<Product> searchLiveProductsByKeywordAndBudget(
+            @Param("keyword") String keyword,
+            @Param("maxPrice") int maxPrice
+    );
 
     //other methods
     //custom finder methods

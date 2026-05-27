@@ -1,6 +1,9 @@
 package com.electronic.store.services.impl;
 
+import com.electronic.store.entities.Product;
+import com.electronic.store.repositories.ProductRepository;
 import com.electronic.store.services.ChatAIService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -9,6 +12,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 
 
@@ -21,10 +28,63 @@ public class ChatAIServiceImpl implements ChatAIService {
     @Value("${gemini.api.url}")
     private String geminiApiUrl;
 
+    @Autowired
+    private final ProductRepository productRepository;
+
     private final RestTemplate restTemplate = new RestTemplate();
+
+    public ChatAIServiceImpl(ProductRepository productRepository) {
+        this.productRepository = productRepository;
+    }
+
 
     @Override
     public String getAIResponse(String userMessage) {
+
+        System.out.println("AI USER MESSAGE: " + userMessage);
+        System.out.println("IS PRODUCT QUERY: " + isProductRecommendationQuery(userMessage));
+
+        if (isProductRecommendationQuery(userMessage)) {
+
+            String keyword = extractSearchKeyword(userMessage);
+            Integer maxPrice = extractMaxPrice(userMessage);
+
+            System.out.println("EXTRACTED KEYWORD: " + keyword);
+            System.out.println("EXTRACTED PRICE: " + maxPrice);
+
+            if (keyword == null || keyword.isBlank() || maxPrice == null) {
+                return "Please tell me the product name/brand and budget. Example: show samsung under 20000.";
+            }
+
+            List<Product> products =
+                    productRepository.searchLiveProductsByKeywordAndBudget(keyword, maxPrice);
+
+            System.out.println("PRODUCTS FOUND: " + products.size());
+
+            if (products.isEmpty()) {
+                return "Sorry, I couldn't find matching products in our store right now.";
+            }
+
+            StringBuilder reply = new StringBuilder("Here are some products from our store:\n\n");
+
+            int count = Math.min(products.size(), 5);
+
+            for (int i = 0; i < count; i++) {
+                Product p = products.get(i);
+
+                reply.append(i + 1)
+                        .append(". ")
+                        .append(p.getTitle())
+                        .append(" - ₹")
+                        .append(p.getDiscountedPrice())
+                        .append("\n");
+            }
+
+            return reply.toString();
+        }
+
+        // existing Gemini FAQ/general code below
+
 
         String prompt = """
         You are an AI shopping assistant for an e-commerce website.
@@ -103,5 +163,56 @@ public class ChatAIServiceImpl implements ChatAIService {
                 .replace("\"", "\\\"")
                 .replace("\n", "\\n");
     }
+
+    private boolean isProductRecommendationQuery(String message) {
+        String lower = message.toLowerCase();
+
+        return lower.contains("suggest")
+                || lower.contains("recommend")
+                || lower.contains("show")
+                || lower.contains("find")
+                || lower.contains("under")
+                || lower.contains("below")
+                || lower.contains("best")
+                || lower.contains("buy");
+    }
+
+    private Integer extractMaxPrice(String message) {
+        Pattern pattern = Pattern.compile("(under|below|less than)\\s*₹?\\s*(\\d+)");
+        Matcher matcher = pattern.matcher(message.toLowerCase());
+
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group(2));
+        }
+
+        return null;
+    }
+
+    private String extractSearchKeyword(String message) {
+        String lower = message.toLowerCase();
+
+        lower = lower.replace("suggest", "");
+        lower = lower.replace("recommend", "");
+        lower = lower.replace("show", "");
+        lower = lower.replace("find", "");
+        lower = lower.replace("best", "");
+        lower = lower.replace("buy", "");
+        lower = lower.replace("under", "");
+        lower = lower.replace("below", "");
+        lower = lower.replace("less than", "");
+        lower = lower.replace("₹", "");
+        lower = lower.replaceAll("\\d+", "");
+
+        String cleaned = lower.trim();
+
+        String[] words = cleaned.split("\\s+");
+
+        if (words.length > 0) {
+            return words[0];
+        }
+
+        return cleaned;
+    }
 }
+
 
