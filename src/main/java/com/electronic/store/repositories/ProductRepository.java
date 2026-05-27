@@ -23,13 +23,26 @@ public interface ProductRepository extends JpaRepository<Product, String> {
         SELECT p FROM Product p
         WHERE p.live = true
         AND p.stock > 0
-        AND p.discountedPrice <= :maxPrice
+        AND p.discountedPrice <= :price
         AND LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
         ORDER BY p.averageRating DESC, p.discountedPrice ASC
     """)
-    List<Product> searchLiveProductsByKeywordAndBudget(
+    List<Product> searchProductsUnderBudget(
             @Param("keyword") String keyword,
-            @Param("maxPrice") int maxPrice
+            @Param("price") int price
+    );
+
+    @Query("""
+        SELECT p FROM Product p
+        WHERE p.live = true
+        AND p.stock > 0
+        AND p.discountedPrice >= :price
+        AND LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        ORDER BY p.averageRating DESC, p.discountedPrice ASC
+    """)
+    List<Product> searchProductsAboveBudget(
+            @Param("keyword") String keyword,
+            @Param("price") int price
     );
 
     //other methods

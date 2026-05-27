@@ -1,5 +1,6 @@
 package com.electronic.store.services.impl;
 
+import com.electronic.store.dtos.PriceFilterDto;
 import com.electronic.store.entities.Product;
 import com.electronic.store.repositories.ProductRepository;
 import com.electronic.store.services.ChatAIService;
@@ -47,19 +48,26 @@ public class ChatAIServiceImpl implements ChatAIService {
         if (isProductRecommendationQuery(userMessage)) {
 
             String keyword = extractSearchKeyword(userMessage);
-            Integer maxPrice = extractMaxPrice(userMessage);
+            PriceFilterDto priceFilter = extractPriceFilter(userMessage);
 
-            System.out.println("EXTRACTED KEYWORD: " + keyword);
-            System.out.println("EXTRACTED PRICE: " + maxPrice);
 
-            if (keyword == null || keyword.isBlank() || maxPrice == null) {
-                return "Please tell me the product name/brand and budget. Example: show samsung under 20000.";
+            if (keyword == null || keyword.isBlank() || priceFilter == null) {
+                return "Please tell me the product name and price range. Example: show shirt under 1000 or show shirt above 1000.";
             }
 
-            List<Product> products =
-                    productRepository.searchLiveProductsByKeywordAndBudget(keyword, maxPrice);
+            List<Product> products;
 
-            System.out.println("PRODUCTS FOUND: " + products.size());
+            if (priceFilter.getType().equals("UNDER")) {
+                products = productRepository.searchProductsUnderBudget(
+                        keyword,
+                        priceFilter.getPrice()
+                );
+            } else {
+                products = productRepository.searchProductsAboveBudget(
+                        keyword,
+                        priceFilter.getPrice()
+                );
+            }
 
             if (products.isEmpty()) {
                 return "Sorry, I couldn't find matching products in our store right now.";
@@ -177,12 +185,21 @@ public class ChatAIServiceImpl implements ChatAIService {
                 || lower.contains("buy");
     }
 
-    private Integer extractMaxPrice(String message) {
-        Pattern pattern = Pattern.compile("(under|below|less than)\\s*₹?\\s*(\\d+)");
-        Matcher matcher = pattern.matcher(message.toLowerCase());
+    private PriceFilterDto extractPriceFilter(String message) {
+        String lower = message.toLowerCase();
 
-        if (matcher.find()) {
-            return Integer.parseInt(matcher.group(2));
+        Pattern underPattern = Pattern.compile("(under|below|less than)\\s*₹?\\s*(\\d+)");
+        Matcher underMatcher = underPattern.matcher(lower);
+
+        if (underMatcher.find()) {
+            return new PriceFilterDto(Integer.parseInt(underMatcher.group(2)), "UNDER");
+        }
+
+        Pattern abovePattern = Pattern.compile("(above|over|more than|greater than)\\s*₹?\\s*(\\d+)");
+        Matcher aboveMatcher = abovePattern.matcher(lower);
+
+        if (aboveMatcher.find()) {
+            return new PriceFilterDto(Integer.parseInt(aboveMatcher.group(2)), "ABOVE");
         }
 
         return null;
