@@ -24,6 +24,24 @@ public interface ProductRepository extends JpaRepository<Product, String> {
         WHERE p.live = true
         AND p.stock > 0
         AND p.discountedPrice <= :price
+        ORDER BY p.averageRating DESC, p.discountedPrice ASC
+    """)
+    List<Product> searchAllProductsUnderBudget(@Param("price") int price);
+
+    @Query("""
+        SELECT p FROM Product p
+        WHERE p.live = true
+        AND p.stock > 0
+        AND p.discountedPrice >= :price
+        ORDER BY p.averageRating DESC, p.discountedPrice ASC
+    """)
+    List<Product> searchAllProductsAboveBudget(@Param("price") int price);
+
+    @Query("""
+        SELECT p FROM Product p
+        WHERE p.live = true
+        AND p.stock > 0
+        AND p.discountedPrice <= :price
         AND LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
         ORDER BY p.averageRating DESC, p.discountedPrice ASC
     """)

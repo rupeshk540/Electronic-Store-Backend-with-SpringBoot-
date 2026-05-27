@@ -48,6 +48,10 @@ public class ChatAIServiceImpl implements ChatAIService {
         if (isProductRecommendationQuery(userMessage)) {
 
             String keyword = extractSearchKeyword(userMessage);
+            boolean generalProductSearch =
+                    keyword.equals("product")
+                            || keyword.equals("products")
+                            || keyword.isBlank();
             PriceFilterDto priceFilter = extractPriceFilter(userMessage);
 
 
@@ -55,18 +59,24 @@ public class ChatAIServiceImpl implements ChatAIService {
                 return "Please tell me the product name and price range. Example: show shirt under 1000 or show shirt above 1000.";
             }
 
+
             List<Product> products;
 
-            if (priceFilter.getType().equals("UNDER")) {
-                products = productRepository.searchProductsUnderBudget(
-                        keyword,
-                        priceFilter.getPrice()
-                );
+            if (generalProductSearch) {
+
+                if (priceFilter.getType().equals("UNDER")) {
+                    products = productRepository.searchAllProductsUnderBudget(priceFilter.getPrice());
+                } else {
+                    products = productRepository.searchAllProductsAboveBudget(priceFilter.getPrice());
+                }
+
             } else {
-                products = productRepository.searchProductsAboveBudget(
-                        keyword,
-                        priceFilter.getPrice()
-                );
+
+                if (priceFilter.getType().equals("UNDER")) {
+                    products = productRepository.searchProductsUnderBudget(keyword, priceFilter.getPrice());
+                } else {
+                    products = productRepository.searchProductsAboveBudget(keyword, priceFilter.getPrice());
+                }
             }
 
             if (products.isEmpty()) {
@@ -75,6 +85,9 @@ public class ChatAIServiceImpl implements ChatAIService {
 
             StringBuilder reply = new StringBuilder("Here are some products from our store:\n\n");
 
+            reply.append("Found ")
+                    .append(products.size())
+                    .append(" matching products.\n\n");
             int count = Math.min(products.size(), 5);
 
             for (int i = 0; i < count; i++) {
@@ -230,6 +243,8 @@ public class ChatAIServiceImpl implements ChatAIService {
 
         return cleaned;
     }
+
+
 }
 
 
