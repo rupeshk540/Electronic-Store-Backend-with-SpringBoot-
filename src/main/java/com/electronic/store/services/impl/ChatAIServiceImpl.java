@@ -101,7 +101,7 @@ public class ChatAIServiceImpl implements ChatAIService {
                         .append(p.getDiscountedPrice())
                         .append("\n")
                         .append("Rating: ⭐ ")
-                        .append(p.getAverageRating())
+                        .append(p.getAverageRating() != null ? p.getAverageRating() : "No rating yet")
                         .append("\n")
                         .append("View Product: http://localhost:3000/products/")
                         .append(p.getProductId())
