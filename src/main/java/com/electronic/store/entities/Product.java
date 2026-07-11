@@ -34,8 +34,26 @@ public class Product {
     private Integer totalReviews = 0;
 
     @ElementCollection
+    @CollectionTable(
+            name = "product_features",
+            joinColumns = @JoinColumn(name = "product_id")
+    )
+    @Column(name = "feature")
+    private List<String> features = new ArrayList<>();
+
+    @ElementCollection
+    @CollectionTable(
+            name = "product_specifications",
+            joinColumns = @JoinColumn(name = "product_id")
+    )
+    @MapKeyColumn(name = "spec_key")
+    @Column(name = "spec_value")
+    private Map<String, String> specifications = new HashMap<>();
+
+    @ElementCollection
     @CollectionTable(name = "product_image_urls",joinColumns = @JoinColumn(name = "product_id"))
     private List<String> productImageUrls = new ArrayList<>();
+
     @ElementCollection
     @CollectionTable(name = "product_image_public_ids",joinColumns = @JoinColumn(name = "product_id"))
     private List<String> productImagePublicIds = new ArrayList<>();

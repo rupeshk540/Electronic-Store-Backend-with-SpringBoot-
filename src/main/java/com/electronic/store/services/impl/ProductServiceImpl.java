@@ -105,19 +105,33 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductDto createInCategoryAndCollection(ProductDto productDto, String categoryId, MultipartFile[] images) throws IOException {
 
-        // --- Map DTO → Entity (basic fields only) ---
+        // Map DTO → Entity (basic fields only)
         Product product = mapper.map(productDto, Product.class);
 
-        // --- Category ---
+        //Category
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
         product.setCategory(category);
 
-        // --- Collections ---
+        //Collections
         if (productDto.getCollectionIds() != null && !productDto.getCollectionIds().isEmpty()) {
             Set<Collection> collections = new HashSet<>(collectionRepository.findAllById(productDto.getCollectionIds()));
             product.setCollections(collections);
         }
+
+        //Features
+        product.setFeatures(
+            productDto.getFeatures() != null
+                    ? new ArrayList<>(productDto.getFeatures())
+                    : new ArrayList<>()
+        );
+
+        //Specifications
+        product.setSpecifications(
+            productDto.getSpecifications() != null
+                    ? new HashMap<>(productDto.getSpecifications())
+                    : new HashMap<>()
+        );
 
         // --- Images ---
         if (images != null && images.length > 0) {
@@ -134,10 +148,10 @@ public class ProductServiceImpl implements ProductService {
             product.setProductImagePublicIds(publicIds);
         }
 
-        // --- Save product ---
+        // Save product
         Product saved = productRepository.save(product);
 
-        // --- Map Entity → DTO for response ---
+        // Map Entity → DTO for response
         ProductDto response = mapper.map(saved, ProductDto.class);
 
         // Set IDs explicitly (since we don’t want full category/collections in DTO)
@@ -164,8 +178,13 @@ public class ProductServiceImpl implements ProductService {
         if (productDto.getDiscountedPrice() != null) product.setDiscountedPrice(productDto.getDiscountedPrice());
         if (productDto.getLive() != null) product.setLive(productDto.getLive());
         if (productDto.getStock() != null) product.setStock(productDto.getStock());
-
-        // --- handle images ---
+        if (productDto.getFeatures() != null) {
+            product.setFeatures(new ArrayList<>(productDto.getFeatures()));
+        }
+        if (productDto.getSpecifications() != null) {
+            product.setSpecifications(new HashMap<>(productDto.getSpecifications()));
+        }
+        // handle images
         if ((images != null && images.length > 0) || productDto.getProductImageUrls() != null) {
 
             // Step 1: Delete removed images (but at least one must remain, frontend ensures this)

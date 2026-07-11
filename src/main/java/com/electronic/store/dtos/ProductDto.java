@@ -22,6 +22,8 @@ public class ProductDto {
     private String productId;
     private String title;
     private String description;
+    private List<String> features;
+    private Map<String,String> specifications;
     private Integer price;
     private Integer discountedPrice;
     private Integer rentalPrice;
@@ -29,7 +31,8 @@ public class ProductDto {
     private Date addedDate;
     private Boolean live;
     private Integer stock;
-    private Integer rating;
+    private Integer averageRating;
+    private Integer totalReviews;
     private List<String> productImageUrls;
     private Category category;
     private Set<CollectionDto> collections;      // multiple collections
