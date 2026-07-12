@@ -48,4 +48,4 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/zeptra_app:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/zeptra_app:${{ github.sha }} docker build -t zepta-backend:latest .
+            ${{ secrets.DOCKERHUB_USERNAME }}/zeptra_app:${{ github.sha }}
