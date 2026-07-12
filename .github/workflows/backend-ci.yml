@@ -26,6 +26,9 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Give execute permission to Maven Wrapper
+        run: chmod +x mvnw
+
       - name: Build Project
         run: ./mvnw clean install -DskipTests
 
