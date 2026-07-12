@@ -1,6 +1,7 @@
 package com.electronic.store.config;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.boot.CommandLineRunner;
@@ -54,7 +55,7 @@ public class DataInitializer implements CommandLineRunner {
             admin.setName("Rupesh");
             admin.setEmail("rupesh123@gmail.com");
             admin.setPassword(passwordEncoder.encode("@rup321"));
-            admin.setRoles(List.of(adminRole));
+            admin.setRoles(Set.of(adminRole));
 
             userRepository.save(admin);
         }

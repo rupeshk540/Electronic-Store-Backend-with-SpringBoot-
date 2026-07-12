@@ -38,6 +38,7 @@ public class Product {
             name = "product_features",
             joinColumns = @JoinColumn(name = "product_id")
     )
+    @OrderColumn(name = "feature_order")
     @Column(name = "feature")
     private List<String> features = new ArrayList<>();
 
@@ -52,10 +53,14 @@ public class Product {
 
     @ElementCollection
     @CollectionTable(name = "product_image_urls",joinColumns = @JoinColumn(name = "product_id"))
+    @OrderColumn(name = "url_order")
+    @Column(name = "image_url")
     private List<String> productImageUrls = new ArrayList<>();
 
     @ElementCollection
     @CollectionTable(name = "product_image_public_ids",joinColumns = @JoinColumn(name = "product_id"))
+    @OrderColumn(name = "public_id_order")
+    @Column(name = "public_id")
     private List<String> productImagePublicIds = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.EAGER)
