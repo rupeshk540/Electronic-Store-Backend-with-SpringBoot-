@@ -40,12 +40,7 @@ public class User implements UserDetails {
     private List<Address> addresses = new ArrayList<>();
 
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
+    @ManyToMany(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
     private List<Role> roles = new ArrayList<>();
 
 
