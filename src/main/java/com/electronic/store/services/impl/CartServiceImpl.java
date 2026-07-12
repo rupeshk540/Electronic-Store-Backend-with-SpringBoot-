@@ -78,7 +78,7 @@ public class CartServiceImpl implements CartService {
             return item;
         }).collect(Collectors.toList());
 
-      //  cart.setItems(updatedItems);
+
 
         //create items
        if(!updated.get()){
