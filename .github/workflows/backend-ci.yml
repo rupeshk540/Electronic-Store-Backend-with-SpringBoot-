@@ -49,3 +49,7 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/zeptra_app:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/zeptra_app:${{ github.sha }}
+
+      - name: Deploy to Render
+        if: github.event_name != 'pull_request'
+        run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
