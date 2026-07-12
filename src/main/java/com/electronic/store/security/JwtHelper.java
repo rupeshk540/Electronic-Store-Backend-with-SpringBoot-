@@ -3,6 +3,7 @@ package com.electronic.store.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -17,9 +18,11 @@ import java.util.function.Function;
 public class JwtHelper {
 
     //validity -> in milliseconds
-    public static final long TOKEN_VALIDITY = 5 * 60 * 60 * 1000;
-    //secret key
-    public static final String SECRET_KEY = "ekghejkrgberjkgbwneghnujuhglutghtnrulgigerbgithguigthutguhguiwerhngueurgngeiwureigrngnjrgu";
+    @Value("${jwt.secret}")
+    private String secretKey;
+
+    @Value("${jwt.expiration}")
+    private long tokenValidity;
 
 
     //retrieve username from jwt token
@@ -36,7 +39,7 @@ public class JwtHelper {
     //for retrieving any information from token we will need the secret key
     private Claims getAllClaimsFromToken(String token) {
 
-        return Jwts.parser().setSigningKey(SECRET_KEY).build().parseClaimsJws(token).getPayload();
+        return Jwts.parser().setSigningKey(secretKey).build().parseClaimsJws(token).getPayload();
         // Latest
         //  SignatureAlgorithm hs512 = SignatureAlgorithm.HS512;
         //  SecretKeySpec secretKeySpec = new SecretKeySpec(SECRET_KEY.getBytes(),hs512.getJcaName());
@@ -71,8 +74,8 @@ public class JwtHelper {
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + TOKEN_VALIDITY))
-                .signWith(SignatureAlgorithm.HS512, SECRET_KEY).compact();
+                .setExpiration(new Date(System.currentTimeMillis() + tokenValidity))
+                .signWith(SignatureAlgorithm.HS512, secretKey).compact();
     }
 
     //validate token
