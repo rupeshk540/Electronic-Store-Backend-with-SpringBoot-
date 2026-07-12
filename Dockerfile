@@ -1,5 +1,6 @@
-# Use Java 21 runtime image
-FROM eclipse-temurin:21-jdk
+
+# Use Java 21 JRE-only runtime image — smaller, since we already built the JAR in CI
+FROM eclipse-temurin:21-jre-alpine
 
 # Set working directory inside the container
 WORKDIR /app
