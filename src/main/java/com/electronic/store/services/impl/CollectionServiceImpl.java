@@ -41,14 +41,16 @@ public class CollectionServiceImpl implements CollectionService {
     private String imagePath;
 
     private static final Map<String, String> COLLECTION_ICONS = Map.of(
-            "All Deals", "⚡",
-            "Hot Deals", "🔥",
-            "Trending", "📈",
-            "50% Off", "💥",
-            "Best Seller", "⭐",
-            "New Arrival", "🆕",
-            "Best Buy", "💎",
-            "Best Rental", "🏆"
+            "All Products", "layout-grid",
+            "Hot Deals", "flame",
+            "Trending", "trending-up",
+            "Best Sellers", "award",
+            "New Arrivals", "sparkles",
+            "Top Rated", "star",
+            "Best Value", "shopping-bag",
+            "Featured", "gem",
+            "Today's Offers", "badge-percent",
+            "Rental Picks", "package-check"
     );
 
     private Logger logger = LoggerFactory.getLogger(CollectionServiceImpl.class);
