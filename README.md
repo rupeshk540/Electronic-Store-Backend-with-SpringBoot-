@@ -131,12 +131,12 @@ Real production issues diagnosed and resolved while building and deploying this 
 - **Docker image size** — Cut image size significantly by switching the runtime base image from a full JDK to a JRE-only Alpine image, reducing deploy time
 - **Environment variable propagation** — Traced and fixed a chain of issues where property names didn't match between `application.properties` and the hosting platform's environment configuration, including a `.gitignore` misconfiguration that stripped `application.properties` out of the CI build entirely
 
-## Deployment
+## Deployment  
 
 Deployed on **Render** as a Docker container, pulling directly from Docker Hub. Database is a managed MySQL instance on **Aiven**. Both are on free tiers suitable for demo/portfolio use — not intended for high-traffic production load.
 
-## Contact
 
+## Contact
 **Rupesh Kumar**
 [GitHub] (https://github.com/rupeshk540) • [LinkedIn](https://linkedin.com/in/rupesh-kumarr)
 
